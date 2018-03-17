@@ -1,20 +1,22 @@
-HOW TO USE:
+### HOW TO USE:
 
 AES.java takes the following arguments in order: 
 <ul>
-<li>Key file name (hex value of key on first line of file)</li>
-<li>Input file name (hex values)</li>
-<li>Output file name (hex values)</li>
+<li>Key file name</li>
+<li>Input file name</li>
+<li>Output file name</li>
 <li>An encryption/decryption flag (-e or -d)</li>
 </ul>
 
-EXAMPLE:
+Note: The key, input, and output files should be in hexadecimal form. If you are using linux, [hexdump](http://man7.org/linux/man-pages/man1/hexdump.1.html) is a very convenient way to convert to and from hex.
+
+### EXAMPLE:
 <pre>
 java AES key.txt -i input.txt -o encrypted.txt -e
 java AES key.txt -i input.txt -o decrypted.txt -d
 </pre>
 
-FILES:
+### FILES:
 
 1. *AES.java* - This is the main file that reads in arguments, encrypts or decrypts in blocks of 128 bits, and writes the encrypted/decrypted values to the output file.
 2. *MixColumns.java* - The resulting bytes in the state are equal to a combination of row-specific multiplication (in Rijndael Galois field) and the XOR operation with each element in the column. 
@@ -25,7 +27,7 @@ FILES:
 7. *sample_output_encrypted.txt* - Encoded input.txt
 8. *sample_output_decrypted.txt* - Decoded input.txt
 
-AES:
+### AES:
 
 The Advanced Encryption Standard or AES is a symmetric block cipher used by the U.S. government to protect classified information.
 
