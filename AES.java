@@ -11,56 +11,83 @@ public class AES
     public static int keyLengthBits = 256;
     public static int rounds = (keyLengthBits + 192) / 32;
 
+    public static void printUsage()
+    {
+        System.out.println("Usage: java AES <key.txt> -i <input.txt> -o <output.txt> [-e -d]");
+        System.out.println("                <key.txt>:      file name that contains key");
+        System.out.println("                <input.txt>:    file name that contains content to be encrypted");
+        System.out.println("                <output.txt>:   file name that will contain encrypted content");
+        System.out.println("                [-e]:           encryption");
+        System.out.println("                [-d]:           decryption");
+        System.out.println("Examples:");
+        System.out.println("       java AES my_key.txt -i my_input.txt -o my_output.txt -e");
+        System.out.println("       java AES my_key.txt -i my_input.txt -o my_output.txt -d");
+    }
 
     public static void main(String[] args) throws FileNotFoundException, UnsupportedEncodingException
     {
-        long startTime = System.nanoTime();
-        boolean encrypt = (args[0].toLowerCase().equals("e"));
-        File fkey = new File(args[1]);
-        File finput = new File(args[2]);
-        File foutput = getFileOutput(encrypt, args[2]);
-        byte[][] key = getKeyTable(getKeyStr(fkey));
-        keyRounds = KeySchedule.getRoundKeys(key);
-        String output = encryptDecrypt(finput, encrypt);
-        writeToOutputFile(foutput, output);
-        long endTime = System.nanoTime();
-        long duration = endTime - startTime;
-        System.out.println("Duration: " + duration);
-    }
+        // Check for invalid argument format
+        if (args.length != 6 || !args[1].equals("-i") || !args[3].equals("-o") || (!args[5].equals("-e") && !args[5].equals("-d")))
+        {
+            printUsage();
+            System.exit(1);
+            return;
+        }
 
-    public static File getFileOutput(boolean e, String inputFile)
-    {
-        if (e)
-            return new File(inputFile + ".enc");
-        return new File(inputFile + ".dec");
+        // Time before encryption/decryption process starts
+        long startTime = System.currentTimeMillis();
+
+        // Read inputs
+        File fKey = new File(args[0]);
+        File fInput = new File(args[2]);
+        File fOutput = new File(args[4]);
+        boolean bEncrypt = args[5].toLowerCase().equals("-e");
+
+        // Perform encryption/decryption
+        byte[][] key = getKeyTable(fKey);
+        keyRounds = KeySchedule.getRoundKeys(key);
+        String output = encryptDecrypt(fInput, bEncrypt);
+        writeToOutputFile(fOutput, output);
+
+        // Time after encryption/decryption is finished
+        long endTime = System.currentTimeMillis();
+        long milliDuration = endTime - startTime;
+
+        System.out.println("Duration: " + milliDuration + " milliseconds");
     }
 
     // Returns a byte array that represents the supplied key
-    public static byte[][] getKeyTable(String key)
+    public static byte[][] getKeyTable(File in) throws FileNotFoundException
     {
+        Scanner keyFileScanner = new Scanner(in);
+        String keyString = keyFileScanner.nextLine();
+
+        // The key should be only one line of text
+        keyFileScanner.close();
+
+        if (keyString.length() != keyLengthBits / 4)
+        {
+            throw new RuntimeException("Key should be of length " + (keyLengthBits / 4) + " on the first line of " + in.getName());
+        }
+
         int numRows = keyLengthBits / 32;
         byte[][] result = new byte[numRows][4];
         for (int i = 0; i < keyLengthBits / 4; i += 2)
         {
-            String strByte = key.substring(i, i + 2);
+            String strByte = keyString.substring(i, i + 2);
+            char[] lineChars = strByte.toCharArray();
+            for (char c : lineChars)
+            {
+                if (!isHexChar(c))
+                {
+                    throw new RuntimeException(in.getName() + ": Not valid hexidecimal character '" + c + "'");
+                }
+            }
             // converts substring of length 2 (representing hex) to byte, and places in array
             result[i / numRows][(i / 2) % 4] = Integer.decode("0x" + strByte).byteValue();
         }
-        return result;
-    }
 
-    public static String getKeyStr(File in) throws FileNotFoundException
-    {
-        Scanner s = new Scanner(in);
-        String res = s.nextLine();
-        s.close();
-        char[] lineChars = res.toCharArray();
-        for (char c : lineChars)
-            if (!isHexChar(c))
-                System.err.println("Not valid hex char: " + c);
-        if (res.length() != keyLengthBits / 4)
-            System.err.println("Key is not of length " + keyLengthBits / 4);
-        return res;
+        return result;
     }
 
 
